@@ -6,23 +6,19 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.icu.text.DateFormat;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.support.design.widget.NavigationView;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
+import com.google.android.material.navigation.NavigationView;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,17 +28,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserInfo;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.kenjasim.glucosehelper.fragments.CalcFragment;
 import com.kenjasim.glucosehelper.fragments.FoodsFragment;
 import com.kenjasim.glucosehelper.fragments.LogbookFragment;
@@ -50,27 +39,33 @@ import com.kenjasim.glucosehelper.fragments.MainFragment;
 import com.kenjasim.glucosehelper.other.CarbData;
 import com.kenjasim.glucosehelper.other.CircleTransform;
 import com.kenjasim.glucosehelper.other.GlucoseData;
+import com.kenjasim.glucosehelper.other.LocalStore;
 
 
 import java.util.Date;
 
 
 
-import static com.bumptech.glide.gifdecoder.GifHeaderParser.TAG;
 import static com.kenjasim.glucosehelper.R.mipmap.ic_launcher;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    private FirebaseAuth firebaseAuth;
-    private FirebaseAuth.AuthStateListener authListener;
+    private static final String TAG = "MainActivity";
+    private LocalStore store;
     private NavigationView navigationView;
     private View navHeader;
     private ImageView imgProfile;
     private TextView txtName;
     private ProgressDialog progressDialog;
     final Context context = this;
-    private DatabaseReference dataRef, dataRefFood;
     private String carbratio, bgRatio, ideallevel;
+    private final Runnable dataListener = new Runnable() {
+        @Override
+        public void run() {
+            retrieveRatios();
+            loadNavHeader();
+        }
+    };
 
     FloatingActionMenu materialDesignFAM;
     FloatingActionButton floatingActionButton1, floatingActionButton2;
@@ -87,12 +82,7 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         setSupportActionBar(toolbar);
-        firebaseAuth = FirebaseAuth.getInstance();
-
-
-        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        dataRef = FirebaseDatabase.getInstance().getReference().child("users").child(user.getUid()).child("Entries");
-        dataRefFood = FirebaseDatabase.getInstance().getReference("users").child(user.getUid()).child("Foods");
+        store = new LocalStore(this);
         if (savedInstanceState == null) {
             displayScreen(R.id.nav_home);
         }
@@ -124,24 +114,6 @@ public class MainActivity extends AppCompatActivity
         //Code for what happens when the FABs are pressed
 
 
-        authListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-                if (user == null) {
-                    startActivity(new Intent(MainActivity.this, LoginActivity.class));
-                    finish();
-                    //if the user is not logged in then the app takes them to the login screen
-                }else{
-                    String name = user.getDisplayName();
-                    String email = user.getEmail();
-                    //the users name and email are passed to strings
-
-                }
-            }
-        };
-
-
         retrieveRatios();
         //The blood level ratios are retrieved
 
@@ -163,45 +135,24 @@ public class MainActivity extends AppCompatActivity
     }
 
         private void loadNavHeader() {
-            // name, website
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user != null) {
-                for (UserInfo profile : user.getProviderData()) {
+            String name = store.getName();
+            //The name is retrieved from the phone's storage
 
-                    String name = profile.getDisplayName();
-                    String email = profile.getEmail();
-                    Uri photoUrl = profile.getPhotoUrl();
-                    //The name the email and the photoURL is retrieved and passed to strings
-
-                    if (name == null){
-                        txtName.setText("NAME NOT SET");
-                        //If the name is null then the name is set to Name not set
-                    }else{
-                        txtName.setText(name);
-                        //If not then the name is set
-                    }
-
-                    if (photoUrl == null){
-                        Glide.with(this).load(ic_launcher)
-                                .crossFade()
-                                .thumbnail(0.5f)
-                                .bitmapTransform(new CircleTransform(this))
-                                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                                .into(imgProfile);
-                        //If the photo is not there then the app logo is set
-
-                    }else{
-                    Glide.with(this).load(photoUrl)
-                            .crossFade()
-                            .thumbnail(0.5f)
-                            .bitmapTransform(new CircleTransform(this))
-                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                            .into(imgProfile);
-                        //Else the users profile pic is set
-                }}
-
-
+            if (name == null || name.isEmpty()){
+                txtName.setText("NAME NOT SET");
+                //If the name is null then the name is set to Name not set
+            }else{
+                txtName.setText(name);
+                //If not then the name is set
             }
+
+            Glide.with(this).load(ic_launcher)
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .thumbnail(0.5f)
+                    .transform(new CircleTransform())
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .into(imgProfile);
+            //The app logo is set as the profile picture
         }
 
     @Override
@@ -213,33 +164,6 @@ public class MainActivity extends AppCompatActivity
         } else {
             super.onBackPressed();
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_logout) {
-            signOut();
-            return true;
-            //If the item 'logout' is pressed then the sign out method is excecuted
-        }
-
-
-        return super.onOptionsItemSelected(item);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -299,11 +223,6 @@ public class MainActivity extends AppCompatActivity
 
 
 
-    public void signOut() {
-        firebaseAuth.signOut();
-        //This is for signing out
-    }
-
     private void displayInputDialog(){
         LayoutInflater li = LayoutInflater.from(context);
         final View promptsView = li.inflate(R.layout.prompt_food, null);
@@ -338,10 +257,10 @@ public class MainActivity extends AppCompatActivity
                                     progressDialog.dismiss();
                                     Toast.makeText(MainActivity.this, "Error Data Not Saved", Toast.LENGTH_SHORT).show();
                                 }else{
-                                    String dataid = dataRefFood.push().getKey();
+                                    String dataid = LocalStore.newId();
 
                                     CarbData carbData = new CarbData(foodName, carbs, amount, dataid);
-                                    dataRefFood.child(dataid).setValue(carbData);
+                                    store.saveFood(carbData);
                                     progressDialog.dismiss();
                                     dialog.cancel();
                                 }
@@ -446,10 +365,10 @@ public class MainActivity extends AppCompatActivity
                                     Long tsLong = System.currentTimeMillis()/1000;
                                     String ts = tsLong.toString();
                                     String dateTime = DateFormat.getDateTimeInstance().format(new Date());
-                                    String dataid = dataRef.push().getKey();
+                                    String dataid = LocalStore.newId();
 
                                     GlucoseData glucoseData = new GlucoseData(bloodReading, carbs, insulin, dateTime, dataid, ts, notes);
-                                    dataRef.child(dataid).setValue(glucoseData);
+                                    store.saveEntry(glucoseData);
                                     progressDialog.dismiss();
                                     dialog.cancel();
 
@@ -479,86 +398,26 @@ public class MainActivity extends AppCompatActivity
 
     }
     private void retrieveRatios(){
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        DatabaseReference carbRatioRef = database.getReference("users").child(user.getUid()).child("Carbratio");
-        DatabaseReference bgRatioRef = database.getReference("users").child(user.getUid()).child("BGRatio");
-        DatabaseReference idealLevelRef = database.getReference("users").child(user.getUid()).child("Ideal Level");
-
-        carbRatioRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                String carbRatio = dataSnapshot.getValue(String.class);
-                if (carbRatio == null){
-                   carbratio = "10";
-                }else{
-                    carbratio = carbRatio;
-                }
-                Log.d(TAG, "Value is: " + carbRatio);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                Log.w(TAG, "Failed to read value.", error.toException());
-            }
-        });
-
-        bgRatioRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                String BGRatio = dataSnapshot.getValue(String.class);
-                if (BGRatio == null){
-                    bgRatio = "1";
-                }else{
-                    bgRatio = BGRatio;
-                }
-                bgRatio = BGRatio;
-                Log.d(TAG, "Value is: " + BGRatio);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                Log.w(TAG, "Failed to read value.", error.toException());
-            }
-        });
-
-        idealLevelRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                String idealLevel = dataSnapshot.getValue(String.class);
-                if (idealLevel == null){
-                    ideallevel = "7";
-                }else{
-                    ideallevel = idealLevel;
-                }
-
-                Log.d(TAG, "Value is: " + idealLevel);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                Log.w(TAG, "Failed to read value.", error.toException());
-            }
-        });
-
+        carbratio = store.getCarbRatio();
+        bgRatio = store.getBgRatio();
+        ideallevel = store.getIdealLevel();
+        //The ratios are loaded from the phone's storage (defaults are used if none are saved)
     }
 
 
     @Override
     public void onStart() {
         super.onStart();
-        firebaseAuth.addAuthStateListener(authListener);
-        //This adds the auth state listener
+        LocalStore.addListener(dataListener);
+        dataListener.run();
+        //This listens for changes to the saved data
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (authListener != null) {
-            firebaseAuth.removeAuthStateListener(authListener);
-            //and if the user isn't null then it removes the listener
-        }
+        LocalStore.removeListener(dataListener);
+        //and removes the listener when the activity is no longer visible
     }
 
 }
-
