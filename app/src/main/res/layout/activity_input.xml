@@ -10,7 +10,7 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.kenjasim.glucosehelper.InputActivity">
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
@@ -30,9 +30,9 @@
             android:hint="Blood Sugar"
             android:inputType="numberDecimal" />
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/carbETL"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -51,9 +51,9 @@
             android:hint="Carbs"
             android:inputType="numberDecimal" />
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/carbETL"
@@ -84,7 +84,7 @@
             android:background="@color/colorAccent"
             android:textColor="@color/textLight"/>
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/saveButton"
@@ -99,7 +99,7 @@
         android:background="@color/colorAccent"
         android:textColor="@color/textLight"/>
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -110,6 +110,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Notes" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
 </RelativeLayout>

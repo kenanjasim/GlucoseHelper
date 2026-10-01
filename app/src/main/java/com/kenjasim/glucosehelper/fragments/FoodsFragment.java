@@ -3,10 +3,9 @@ package com.kenjasim.glucosehelper.fragments;
 
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,24 +14,23 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.kenjasim.glucosehelper.MainActivity;
 import com.kenjasim.glucosehelper.R;
 import com.kenjasim.glucosehelper.other.CarbAdapter;
 import com.kenjasim.glucosehelper.other.CarbData;
+import com.kenjasim.glucosehelper.other.LocalStore;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class FoodsFragment extends Fragment {
-    private DatabaseReference databaseReference;
+    private LocalStore store;
+    private final Runnable dataListener = new Runnable() {
+        @Override
+        public void run() {
+            loadFoods();
+        }
+    };
     private ListView foodslv;
     private List<CarbData> foodsDataList;
     private ProgressDialog progressDialog;
@@ -49,8 +47,7 @@ public class FoodsFragment extends Fragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         getActivity().setTitle("Foods");
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("users").child(user.getUid()).child("Foods");
+        store = new LocalStore(getActivity());
         foodslv = (ListView) getActivity().findViewById(R.id.foodsLV);
         //The classes are linked to the xml classes
 
@@ -110,12 +107,9 @@ public class FoodsFragment extends Fragment {
                                                     }else{
 
                                                         CarbData carbData = new CarbData(foodName, carbs, amount, dataId);
-                                                        databaseReference.child(dataId).setValue(carbData);
+                                                        store.saveFood(carbData);
                                                         dialog.cancel();
                                                         progressDialog.dismiss();
-                                                        Intent i = new Intent(getActivity(), MainActivity.class);
-                                                        foodsDataList.clear();
-                                                        startActivity(i);
 
                                                     }
 
@@ -140,10 +134,7 @@ public class FoodsFragment extends Fragment {
                         }else{
                             CarbData carbData = foodsDataList.get(position);
                             String dataid = carbData.getDataid();
-                            databaseReference.child(dataid).removeValue();
-                            Intent i = new Intent(getActivity(), MainActivity.class);
-                            foodsDataList.clear();
-                            startActivity(i);
+                            store.deleteFood(dataid);
 
                             //This shows the data for deleting the food data
                         }
@@ -158,36 +149,26 @@ public class FoodsFragment extends Fragment {
 
     }
 
+    private void loadFoods() {
+        foodsDataList.clear();
+        foodsDataList.addAll(store.getFoods());
+        //The foods are loaded from the phone's storage
+
+        CarbAdapter carbAdapter = new CarbAdapter(getActivity(), foodsDataList);
+        foodslv.setAdapter(carbAdapter);
+    }
+
     @Override
     public void onStart() {
         super.onStart();
+        LocalStore.addListener(dataListener);
+        loadFoods();
+    }
 
-        databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                foodsDataList.clear();
-
-                for (DataSnapshot carbDataSnapshot: dataSnapshot.getChildren()){
-
-                    CarbData carbData = carbDataSnapshot.getValue(CarbData.class);
-                    foodsDataList.add(carbData);
-
-                }
-
-                CarbAdapter carbAdapter = new CarbAdapter(getActivity(), foodsDataList);
-                foodslv.setAdapter(carbAdapter);
-
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-
-
-            }
-        });
+    @Override
+    public void onStop() {
+        super.onStop();
+        LocalStore.removeListener(dataListener);
     }
 
 }

@@ -15,7 +15,7 @@
         tools:context="com.kenjasim.glucosehelper.SettingsActivity">
 
         <TextView
-            android:text="Account Settings"
+            android:text="Profile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
@@ -34,7 +34,7 @@
             android:layout_below="@+id/textView"
             android:layout_marginTop="12dp" />
         <Button
-            android:text="Delete Account"
+            android:text="Delete All Data"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/DeleteAccount"
@@ -59,7 +59,7 @@
             android:layout_below="@+id/textView2"
             android:id="@+id/space" />
 
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/textView2"
@@ -74,9 +74,9 @@
                 android:layout_below="@+id/insSensET"
                 android:layout_weight="1"
                 android:hint="Carb Ratio" />
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/textInputLayout"
@@ -91,9 +91,9 @@
                 android:layout_below="@+id/carbRatioET"
                 android:layout_weight="1"
                 android:hint="Insulin Sensitivity" />
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
@@ -109,7 +109,7 @@
                 android:layout_toEndOf="@+id/space"
                 android:layout_weight="1"
                 android:hint="Ideal Blood Glucose Levels" />
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <Button
             android:id="@+id/saveDataButton"
